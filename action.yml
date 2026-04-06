@@ -1,6 +1,4 @@
-name: "Thresh — Self-Healing Pipelines"
-description: >
-  Detects and auto-fixes common GitHub Actions issues (wrong runner OS,
+ Detects and auto-fixes common GitHub Actions issues (wrong runner OS,
   missing permissions blocks, and more) via a composable patch registry.
   Commits fixes directly to the branch or leaves a PR review comment.
 
