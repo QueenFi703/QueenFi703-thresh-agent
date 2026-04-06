@@ -1,0 +1,61 @@
+name: "Thresh — Self-Healing Pipelines"
+description: >
+  Detects and auto-fixes common GitHub Actions issues (wrong runner OS,
+  missing permissions blocks, and more) via a composable patch registry.
+  Commits fixes directly to the branch or leaves a PR review comment.
+
+author: "QueenFi703"
+
+branding:
+  icon: zap
+  color: orange
+
+inputs:
+  github-token:
+    description: >
+      GitHub token used to read workflow files and commit fixes.
+      Typically `${{ secrets.GITHUB_TOKEN }}`.
+    required: true
+
+  commit-fixes:
+    description: >
+      When 'true', Thresh commits any patches it detects automatically.
+      Set to 'false' to run in dry-run / report-only mode.
+    required: false
+    default: "true"
+
+  pr-number:
+    description: >
+      Pull request number for the current event, used to post a summary
+      comment. Pass `${{ github.event.pull_request.number }}` when running
+      on pull_request events. Leave empty on push events.
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Install Thresh dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --ignore-scripts
+
+    - name: Run Thresh agent
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_COMMIT_FIXES: ${{ inputs.commit-fixes }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        GITHUB_EVENT_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+      run: npx tsx thresh/run.ts

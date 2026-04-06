@@ -1,0 +1,21 @@
+{
+  "name": "Thresh — Self-Healing Pipelines",
+  "url": "https://github.com/QueenFi703/thresh-agent",
+  "hook_attributes": {
+    "url": "https://your-deployment-url/api/github/webhooks"
+  },
+  "redirect_url": "https://github.com/QueenFi703/thresh-agent",
+  "callback_urls": [],
+  "public": true,
+  "default_permissions": {
+    "contents": "write",
+    "pull_requests": "write",
+    "metadata": "read",
+    "workflows": "write"
+  },
+  "default_events": [
+    "push",
+    "pull_request",
+    "workflow_run"
+  ]
+}

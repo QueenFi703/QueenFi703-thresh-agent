@@ -1,0 +1,14 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci && npm run build"
+startCommand = "node dist/thresh/app/server.js"
+
+[deploy]
+healthcheckPath = "/api/github/webhooks"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[environments.production.variables]
+NODE_ENV = "production"
+PORT = "3000"
