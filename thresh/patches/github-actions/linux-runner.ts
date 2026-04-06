@@ -18,7 +18,10 @@ export const linuxRunnerPatch: Patch = {
   name: "Replace Windows runner with ubuntu-latest",
 
   detect(analysis: WorkflowAnalysis): boolean {
-    return analysis.workflows.some((wf) => WINDOWS_RUNNER_RE.test(wf.raw));
+    return analysis.workflows.some((wf) => {
+      WINDOWS_RUNNER_RE.lastIndex = 0;
+      return WINDOWS_RUNNER_RE.test(wf.raw);
+    });
   },
 
   apply(_ctx: RunContext, analysis: WorkflowAnalysis): PatchResult {
