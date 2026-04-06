@@ -70,6 +70,31 @@ export interface RunContext {
   prNumber?: number;
 }
 
+// ─── Remote patch marketplace ─────────────────────────────────────────────────
+
+/**
+ * A patch manifest returned by the remote marketplace API.
+ * The `code` field is a stringified JS module that, when evaluated, returns an
+ * object implementing the `Patch` interface (or `{ default: Patch }`).
+ */
+export interface RemotePatchManifest {
+  /** Unique, stable identifier (e.g. "linux-runner"). */
+  id: string;
+  /** Semver string (e.g. "1.0.0"). */
+  version: string;
+  /** Human-readable description shown in logs. */
+  description: string;
+  /** Optional categorisation tags (e.g. ["github-actions", "security"]). */
+  tags?: string[];
+  /**
+   * Trust level assigned by the marketplace.
+   * Only "verified" and "community" patches are loaded by default.
+   */
+  trust: "verified" | "community" | "experimental";
+  /** Stringified JS module evaluated at runtime to produce a `Patch` object. */
+  code: string;
+}
+
 // ─── Patch interface ──────────────────────────────────────────────────────────
 
 /** Every patch implements this interface and self-registers in patches/index.ts. */
