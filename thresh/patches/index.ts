@@ -19,7 +19,12 @@ import { loadRemotePatches } from "./remote-loader.js";
  *   // Then add `myPatch` to the array below.
  */
 
-/** Built-in, always-trusted local patches. */
+/**
+ * Built-in, always-trusted local patches.
+ *
+ * @deprecated Prefer `loadPatches()` which merges local and remote patches.
+ *   This export is kept for backward compatibility and direct unit testing.
+ */
 export const PATCHES: Patch[] = [
   linuxRunnerPatch,
   permissionsPatch,
