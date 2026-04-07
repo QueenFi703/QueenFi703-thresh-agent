@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
 import { Octokit } from "@octokit/rest";
 import type { RunContext, WorkflowAnalysis, PatchResult } from "../shared/types.js";
-import { PATCHES } from "../patches/index.js";
+import { loadPatches } from "../patches/index.js";
 import { perceive } from "./perception.js";
 import { perceiveLocal, writeLocal, resolveWorkspace } from "./local-runner.js";
 
@@ -106,9 +106,10 @@ export async function run(options: AgentRunOptions): Promise<PatchResult[]> {
   }
 
   // ── 2. Detect + Apply ───────────────────────────────────────────────────────
+  const patches = await loadPatches();
   const results: PatchResult[] = [];
 
-  for (const patch of PATCHES) {
+  for (const patch of patches) {
     if (!patch.detect(analysis)) continue;
 
     console.log(`[thresh] Patch applicable: ${patch.id}`);
