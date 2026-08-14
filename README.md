@@ -92,6 +92,95 @@ thresh-agent/
 
 ---
 
+
+## Thresh DREDGE operations architecture
+
+Thresh is the reasoning and decision layer for DREDGE operations; it is not the
+infrastructure itself. The first-version workflow treats DREDGE as the execution
+and orchestration environment, with MCP as the controlled bridge between Thresh
+and operational systems.
+
+### Tool hierarchy
+
+| Tool | Purpose |
+|------|---------|
+| File search | Understand DREDGE repositories and documentation before acting |
+| MCP | Connect Thresh to DREDGE operational tools through a controlled gateway |
+| GitHub | Inspect repositories, issues, Actions runs, and pull requests |
+| Guardrails | Prevent dangerous autonomous actions |
+| User approval | Gate production or destructive operations |
+| If/else | Route incidents based on severity and type |
+| While | Retry and verify controlled operations |
+
+The intended MCP endpoint is:
+
+```text
+https://dredgeoriongateway.com/mcp
+```
+
+That makes the MCP gateway a capability boundary for Thresh. Instead of giving
+the agent direct access to every system, the control path becomes:
+
+```text
+Thresh → DREDGE MCP Gateway → operational systems
+```
+
+### Closed-loop workflow
+
+```text
+                 ┌──────────────────┐
+                 │      THRESH      │
+                 │  DREDGE Agent    │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │    CLASSIFY      │
+                 │ What happened?   │
+                 └────────┬─────────┘
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+         SECURITY       CI/CD       DEPLOYMENT
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+                 ┌──────────────────┐
+                 │       MCP        │
+                 │ DREDGE Gateway   │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │     ANALYZE      │
+                 │ Root-cause       │
+                 └────────┬─────────┘
+                          │
+                          ▼
+                 ┌──────────────────┐
+                 │   IF / ELSE      │
+                 │ Safe to repair?  │
+                 └───────┬──────────┘
+                     YES │       │ NO
+                         ▼       ▼
+                    EXECUTE   APPROVAL
+                         │       │
+                         └───┬───┘
+                             ▼
+                      ┌────────────┐
+                      │  VERIFY    │
+                      └─────┬──────┘
+                            ▼
+                       ┌─────────┐
+                       │  REPORT │
+                       └─────────┘
+```
+
+The code representation for this workflow lives in `thresh/agent/workflow.ts`,
+where Thresh classifies incidents, routes them through the DREDGE MCP gateway,
+and marks security, deployment, high-severity, and critical operations as
+human-approval-gated.
+
 ## Writing a new patch
 
 Implement the `Patch` interface and register it in `thresh/patches/index.ts`:
