@@ -4,6 +4,7 @@ import type { RunContext, WorkflowAnalysis, PatchResult } from "../shared/types.
 import { loadPatches } from "../patches/index.js";
 import { perceive } from "./perception.js";
 import { perceiveLocal, writeLocal, resolveWorkspace } from "./local-runner.js";
+import { buildWorkflowPlan } from "./workflow.js";
 
 /**
  * agent/index.ts — Decision engine
@@ -103,6 +104,14 @@ export async function run(options: AgentRunOptions): Promise<PatchResult[]> {
   if (analysis.workflows.length === 0) {
     console.log("[thresh] No workflow files found — nothing to do.");
     return [];
+  }
+
+  const workflowPlan = buildWorkflowPlan(analysis);
+  console.log(
+    `[thresh] Workflow plan: ${workflowPlan.incidentType} incident via MCP gateway ${workflowPlan.mcpGatewayUrl}`
+  );
+  if (workflowPlan.requiresApproval) {
+    console.log("[thresh] Human approval required for consequential operations.");
   }
 
   // ── 2. Detect + Apply ───────────────────────────────────────────────────────
