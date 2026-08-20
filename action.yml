@@ -1,6 +1,32 @@
- Detects and auto-fixes common GitHub Actions issues (wrong runner OS,
-  missing permissions blocks, and more) via a composable patch registry.
-  Commits fixes directly to the branch or leaves a PR review comment.
+name: Thresh
 
+description: Detects and auto-fixes common GitHub Actions issues through a composable patch registry.
 
+inputs:
+  github-token:
+    description: GitHub token used to inspect workflows and optionally comment or commit fixes.
+    required: true
+  commit-fixes:
+    description: Whether Thresh may commit detected fixes.
+    required: false
+    default: "true"
+  pr-number:
+    description: Pull request number for reporting detected patches.
+    required: false
+    default: ""
 
+runs:
+  using: composite
+  steps:
+    - name: Install Thresh dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci --ignore-scripts
+    - name: Run Thresh
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_COMMIT_FIXES: ${{ inputs.commit-fixes }}
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
+      run: npx --no-install tsx thresh/run.ts
