@@ -9,7 +9,7 @@ inputs:
   commit-fixes:
     description: Whether Thresh may commit detected fixes.
     required: false
-    default: "true"
+    default: "false"
   pr-number:
     description: Pull request number for reporting detected patches.
     required: false

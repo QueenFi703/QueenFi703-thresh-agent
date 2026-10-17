@@ -40,8 +40,8 @@ export const linuxRunnerPatch: Patch = {
       path: target.path,
       content: patched,
       sha: target.sha,
-      commit: true,
-      summary: `Replace Windows runner with ubuntu-latest in ${target.name}`,
+      commit: false,
+      summary: `Review Windows-to-Linux compatibility before changing runners in ${target.name}`,
     };
   },
 };

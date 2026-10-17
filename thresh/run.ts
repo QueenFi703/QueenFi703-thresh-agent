@@ -11,11 +11,11 @@ import { run } from "./agent/index.js";
 import type { RunContext } from "./shared/types.js";
 
 const token = process.env.INPUT_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN ?? "";
-const commitFixes = (process.env.INPUT_COMMIT_FIXES ?? "true").toLowerCase() !== "false";
+const commitFixes = (process.env.INPUT_COMMIT_FIXES ?? "false").toLowerCase() !== "false";
 const owner = process.env.GITHUB_REPOSITORY_OWNER ?? "";
 const repoFull = process.env.GITHUB_REPOSITORY ?? "/";
 const repo = repoFull.split("/")[1] ?? repoFull;
-const ref = (process.env.GITHUB_REF ?? "").replace(/^refs\/heads\//, "") || undefined;
+const ref = process.env.GITHUB_HEAD_REF || (process.env.GITHUB_REF ?? "").replace(/^refs\/heads\//, "") || undefined;
 
 // Resolve PR number: prefer explicit input, then read from GITHUB_EVENT_PATH.
 function resolvePrNumber(): number | undefined {
@@ -51,13 +51,13 @@ if (!owner || !repo) {
 
 const ctx: RunContext = {
   token,
-  commitFixes,
+  commitFixes: commitFixes && !process.env.GITHUB_HEAD_REF,
   workspace: process.env.GITHUB_WORKSPACE,
   prNumber,
 };
 
 console.log(`[thresh] Running on ${owner}/${repo}${ref ? ` @ ${ref}` : ""}`);
-console.log(`[thresh] commit-fixes: ${commitFixes}`);
+console.log(`[thresh] commit-fixes: ${ctx.commitFixes}`);
 
 run({ ctx, owner, repo, ref })
   .then((results) => {

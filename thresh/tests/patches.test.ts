@@ -48,9 +48,9 @@ describe("linux-runner patch", () => {
     expect(result.patchId).toBe("github-actions/linux-runner");
   });
 
-  it("sets commit: true", () => {
+  it("requires manual review before changing operating systems", () => {
     const result = linuxRunnerPatch.apply(CTX, makeAnalysis(withWindows));
-    expect(result.commit).toBe(true);
+    expect(result.commit).toBe(false);
   });
 });
 
@@ -92,5 +92,12 @@ describe("permissions patch", () => {
   it("sets patchId correctly", () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(withoutPerms));
     expect(result.patchId).toBe("github-actions/permissions");
+  });
+});
+
+describe("permissions insertion preserves YAML line boundaries", () => {
+  it.each(["name: CI", "---"]) ("handles a final anchor without a newline: %s", (raw) => {
+    const result = permissionsPatch.apply(CTX, makeAnalysis(raw));
+    expect(result.content).toBe(`${raw}\npermissions: read-all\n`);
   });
 });

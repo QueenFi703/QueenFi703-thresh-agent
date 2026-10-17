@@ -42,9 +42,9 @@ export async function perceive(
     } else {
       entries = data as typeof entries;
     }
-  } catch {
-    // Directory doesn't exist — return empty analysis.
-    return { workflows: [], owner, repo };
+  } catch (error) {
+    if ((error as { status?: number }).status === 404) return { workflows: [], owner, repo };
+    throw error;
   }
 
   const yamlEntries = entries
