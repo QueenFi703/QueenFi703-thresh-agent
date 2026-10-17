@@ -17,7 +17,7 @@ import type { RunContext } from "../shared/types.js";
  *   APP_ID                GitHub App ID
  *   PRIVATE_KEY           GitHub App private key (PEM, \n-escaped)
  *   WEBHOOK_SECRET        GitHub App webhook secret
- *   COMMIT_FIXES          "true" | "false"  (default: "true")
+ *   COMMIT_FIXES          "true" | "false"  (default: "false")
  */
 
 const threshApp: ApplicationFunction = (robot) => {
@@ -33,7 +33,7 @@ const threshApp: ApplicationFunction = (robot) => {
       token: await context.octokit.auth({ type: "installation" }).then(
         (auth) => (auth as { token: string }).token
       ),
-      commitFixes: process.env.COMMIT_FIXES !== "false",
+      commitFixes: process.env.COMMIT_FIXES === "true",
     };
 
     await run({ ctx, owner, repo, ref });
@@ -43,14 +43,20 @@ const threshApp: ApplicationFunction = (robot) => {
     ["pull_request.opened", "pull_request.synchronize"],
     async (context) => {
       const { owner, repo } = context.repo();
-      const ref = context.payload.pull_request.head.ref;
+      // Fork branch names must never be resolved against the base repository.
+      const head = context.payload.pull_request.head;
+      if (!head.repo || head.repo.full_name !== context.payload.repository.full_name) {
+        robot.log.info("Skipping fork pull request; no base-repository branch writes permitted.");
+        return;
+      }
+      const ref = head.ref;
       const prNumber = context.payload.pull_request.number;
 
       const ctx: RunContext = {
         token: await context.octokit.auth({ type: "installation" }).then(
           (auth) => (auth as { token: string }).token
         ),
-        commitFixes: process.env.COMMIT_FIXES !== "false",
+        commitFixes: process.env.COMMIT_FIXES === "true",
         prNumber,
       };
 
@@ -66,7 +72,7 @@ const threshApp: ApplicationFunction = (robot) => {
       token: await context.octokit.auth({ type: "installation" }).then(
         (auth) => (auth as { token: string }).token
       ),
-      commitFixes: process.env.COMMIT_FIXES !== "false",
+      commitFixes: process.env.COMMIT_FIXES === "true",
     };
 
     await run({ ctx, owner, repo, ref });

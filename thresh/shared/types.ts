@@ -49,6 +49,8 @@ export interface PatchResult {
    * When false, Thresh only leaves a review comment describing the issue.
    */
   commit: boolean;
+  /** Actual outcome, assigned by the agent after persistence. */
+  outcome?: "proposed" | "approval-required" | "committed";
   /** Human-readable summary of what was changed (used in commit message / PR comment). */
   summary: string;
 }
@@ -73,7 +75,8 @@ export interface RunContext {
 // ─── Remote patch marketplace ─────────────────────────────────────────────────
 
 /**
- * A patch manifest returned by the remote marketplace API.
+ * @deprecated Executable remote manifests are no longer loaded.
+ * A legacy patch manifest returned by the remote marketplace API.
  * The `code` field is a stringified JS module that, when evaluated, returns an
  * object implementing the `Patch` interface (or `{ default: Patch }`).
  */
@@ -88,7 +91,7 @@ export interface RemotePatchManifest {
   tags?: string[];
   /**
    * Trust level assigned by the marketplace.
-   * Only "verified" and "community" patches are loaded by default.
+   * This self-declared label does not authenticate code; remote loading is disabled.
    */
   trust: "verified" | "community" | "experimental";
   /** Stringified JS module evaluated at runtime to produce a `Patch` object. */

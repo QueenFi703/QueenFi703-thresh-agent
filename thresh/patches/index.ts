@@ -7,7 +7,7 @@ import { loadRemotePatches } from "./remote-loader.js";
  * Patch registry
  *
  * Local (built-in) patches are always loaded first and treated as fully trusted.
- * Remote patches from the marketplace are appended afterward.
+ * Executable remote patches are disabled.
  *
  * To add a new local patch:
  *   1. Implement the `Patch` interface in `./github-actions/<your-patch>.ts`
@@ -31,12 +31,8 @@ export const PATCHES: Patch[] = [
 ];
 
 /**
- * Returns the full ordered patch list: local patches first, then any remote
- * patches fetched from the marketplace (PATCH_REGISTRY_URL).
- *
- * Remote patches are silently skipped when the registry is unavailable or when
- * a patch fails trust / version / eval checks — a registry outage never breaks
- * the core agent loop.
+ * Returns locally reviewed patches. The remote loader only warns when a
+ * legacy registry URL is configured; it never fetches or executes code.
  */
 export async function loadPatches(): Promise<Patch[]> {
   const remote = await loadRemotePatches();

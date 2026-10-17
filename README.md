@@ -30,16 +30,22 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: QueenFi703/thresh-agent@v1
+      - uses: QueenFi703/QueenFi703-thresh-agent@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          commit-fixes: 'true'   # auto-commits any patches applied
+          commit-fixes: 'false'  # proposals only; recommended default
           pr-number: ${{ github.event.pull_request.number }}
 ```
 
-That's it. On every push / PR, Thresh scans your `.github/workflows/` files,
-detects known issues, and either commits the fix or leaves a review comment
-depending on the `commit-fixes` setting.
+That's it. On every push / PR, Thresh scans your `.github/workflows/` files and reports
+proposed repairs. Windows runner changes require compatibility review, and
+permissions changes require approval. Neither built-in patch auto-commits.
+
+Explicit `commit-fixes: true` enables persistence only for eligible future
+locally reviewed patches outside approval-required incidents. In Action mode,
+a clean, attached branch matching origin is required; fixes are committed and
+pushed without force. Pull-request Action runs remain report-only. A failed
+push fails the run and is never reported as a successful repair.
 
 ---
 
@@ -48,7 +54,7 @@ depending on the `commit-fixes` setting.
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `github-token` | ✅ | — | Token used to read workflows and commit fixes |
-| `commit-fixes` | ❌ | `true` | Set to `false` for dry-run / report-only mode |
+| `commit-fixes` | ❌ | `false` | Explicitly opt in to eligible automatic commits |
 | `pr-number` | ❌ | — | PR number for posting a summary comment (pass `${{ github.event.pull_request.number }}`) |
 
 ---
@@ -57,8 +63,8 @@ depending on the `commit-fixes` setting.
 
 | Patch ID | What it fixes |
 |----------|---------------|
-| `github-actions/linux-runner` | Replaces `windows-latest` / `windows-2019` / `windows-2022` with `ubuntu-latest` |
-| `github-actions/permissions` | Inserts a top-level `permissions: read-all` block when none is present |
+| `github-actions/linux-runner` | Proposes Windows-to-Linux runner changes for manual compatibility review |
+| `github-actions/permissions` | Proposes a top-level `permissions: read-all` block for approval when none is present |
 
 ---
 
@@ -177,9 +183,12 @@ Thresh → DREDGE MCP Gateway → operational systems
 ```
 
 The code representation for this workflow lives in `thresh/agent/workflow.ts`,
-where Thresh classifies incidents, routes them through the DREDGE MCP gateway,
-and marks security, deployment, high-severity, and critical operations as
-human-approval-gated.
+where Thresh classifies incidents and describes the intended MCP workflow.
+The gateway URL and steps are planning metadata; this repository does not
+implement a live MCP client. Current reads and eligible commits use GitHub
+directly. Security and deployment incidents block automatic writes. Approval
+means a maintainer reviews and applies the proposal; there is no runtime
+approval token or bypass switch.
 
 ## Writing a new patch
 
@@ -248,7 +257,7 @@ vercel deploy
 | `APP_ID` | GitHub App ID |
 | `PRIVATE_KEY` | GitHub App private key (PEM, `\n`-escaped) |
 | `WEBHOOK_SECRET` | GitHub App webhook secret |
-| `COMMIT_FIXES` | `"true"` \| `"false"` (default: `"true"`) |
+| `COMMIT_FIXES` | `"true"` \| `"false"` (default: `"false"`) |
 | `PORT` | HTTP port (default: `3000`) |
 
 ---
@@ -284,3 +293,9 @@ vercel deploy
 ## License
 
 [MIT](LICENSE)
+
+## Remote patch safety
+
+Executable remote patches are disabled, even when `PATCH_REGISTRY_URL` is set.
+Registry-supplied trust labels do not establish code authenticity. Review new
+patches locally, add them to the built-in registry, and test them before use.

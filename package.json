@@ -10,7 +10,7 @@
     "build": "tsc --project tsconfig.json",
     "start": "node --loader tsx/esm thresh/app/server.ts",
     "dev": "tsx thresh/app/server.ts",
-    "action": "tsx thresh/agent/index.ts",
+    "action": "tsx thresh/run.ts",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "lint": "tsc --noEmit"
   },

@@ -33,7 +33,7 @@ function insertPermissions(raw: string): string {
   if (sepIdx !== -1) {
     const lineEnd = raw.indexOf("\n", sepIdx);
     const insertAt = lineEnd === -1 ? raw.length : lineEnd + 1;
-    return raw.slice(0, insertAt) + PERMISSIONS_BLOCK + raw.slice(insertAt);
+    return raw.slice(0, insertAt) + (insertAt > 0 && raw[insertAt - 1] !== "\n" ? "\n" : "") + PERMISSIONS_BLOCK + raw.slice(insertAt);
   }
 
   // Strategy 2 — first top-level `name:` key.
@@ -41,7 +41,7 @@ function insertPermissions(raw: string): string {
   if (nameMatch && nameMatch.index !== undefined) {
     const lineEnd = raw.indexOf("\n", nameMatch.index);
     const insertAt = lineEnd === -1 ? raw.length : lineEnd + 1;
-    return raw.slice(0, insertAt) + PERMISSIONS_BLOCK + raw.slice(insertAt);
+    return raw.slice(0, insertAt) + (insertAt > 0 && raw[insertAt - 1] !== "\n" ? "\n" : "") + PERMISSIONS_BLOCK + raw.slice(insertAt);
   }
 
   // Strategy 3 — prepend.
