@@ -1,3 +1,5 @@
+import { describe, it, afterEach, before as beforeAll, after as afterAll, mock } from "node:test";
+import assert from "node:assert/strict";
 import { linuxRunnerPatch } from "../patches/github-actions/linux-runner.js";
 import { permissionsPatch } from "../patches/github-actions/permissions.js";
 import type { WorkflowAnalysis, RunContext } from "../shared/types.js";
@@ -20,37 +22,37 @@ describe("linux-runner patch", () => {
   const withLinux = `name: CI\nruns-on: ubuntu-latest\n`;
 
   it("detects windows-latest", () => {
-    expect(linuxRunnerPatch.detect(makeAnalysis(withWindows))).toBe(true);
+    assert.strictEqual(linuxRunnerPatch.detect(makeAnalysis(withWindows)), true);
   });
 
   it("detects windows-2019", () => {
-    expect(linuxRunnerPatch.detect(makeAnalysis(withWindows2019))).toBe(true);
+    assert.strictEqual(linuxRunnerPatch.detect(makeAnalysis(withWindows2019)), true);
   });
 
   it("does not detect ubuntu-latest", () => {
-    expect(linuxRunnerPatch.detect(makeAnalysis(withLinux))).toBe(false);
+    assert.strictEqual(linuxRunnerPatch.detect(makeAnalysis(withLinux)), false);
   });
 
   it("replaces windows-latest with ubuntu-latest", () => {
     const result = linuxRunnerPatch.apply(CTX, makeAnalysis(withWindows));
-    expect(result.content).toContain("ubuntu-latest");
-    expect(result.content).not.toContain("windows-latest");
+    assert.ok((result.content)?.includes("ubuntu-latest"));
+    assert.ok(!(result.content)?.includes("windows-latest"));
   });
 
   it("replaces windows-2019 with ubuntu-latest", () => {
     const result = linuxRunnerPatch.apply(CTX, makeAnalysis(withWindows2019));
-    expect(result.content).toContain("ubuntu-latest");
-    expect(result.content).not.toContain("windows-2019");
+    assert.ok((result.content)?.includes("ubuntu-latest"));
+    assert.ok(!(result.content)?.includes("windows-2019"));
   });
 
   it("sets patchId correctly", () => {
     const result = linuxRunnerPatch.apply(CTX, makeAnalysis(withWindows));
-    expect(result.patchId).toBe("github-actions/linux-runner");
+    assert.strictEqual(result.patchId, "github-actions/linux-runner");
   });
 
   it("requires manual review before changing operating systems", () => {
     const result = linuxRunnerPatch.apply(CTX, makeAnalysis(withWindows));
-    expect(result.commit).toBe(false);
+    assert.strictEqual(result.commit, false);
   });
 });
 
@@ -62,42 +64,44 @@ describe("permissions patch", () => {
   const withSeparator = `---\nname: CI\non: push\n`;
 
   it("detects missing permissions", () => {
-    expect(permissionsPatch.detect(makeAnalysis(withoutPerms))).toBe(true);
+    assert.strictEqual(permissionsPatch.detect(makeAnalysis(withoutPerms)), true);
   });
 
   it("does not detect when permissions already present", () => {
-    expect(permissionsPatch.detect(makeAnalysis(withPerms))).toBe(false);
+    assert.strictEqual(permissionsPatch.detect(makeAnalysis(withPerms)), false);
   });
 
   it("inserts after name: line", () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(withoutPerms));
     const lines = result.content.split("\n");
     const nameIdx = lines.findIndex((l: string) => l.startsWith("name:"));
-    expect(lines[nameIdx + 1]).toMatch(/^permissions/);
+    assert.match(lines[nameIdx + 1], /^permissions/);
   });
 
   it("inserts after --- separator when present", () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(withSeparator));
     const lines = result.content.split("\n");
     const sepIdx = lines.findIndex((l: string) => l.trim() === "---");
-    expect(lines[sepIdx + 1]).toMatch(/^permissions/);
+    assert.match(lines[sepIdx + 1], /^permissions/);
   });
 
   it("does not duplicate permissions block", () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(withoutPerms));
     const matches = (result.content.match(/^permissions/gm) ?? []).length;
-    expect(matches).toBe(1);
+    assert.strictEqual(matches, 1);
   });
 
   it("sets patchId correctly", () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(withoutPerms));
-    expect(result.patchId).toBe("github-actions/permissions");
+    assert.strictEqual(result.patchId, "github-actions/permissions");
   });
 });
 
 describe("permissions insertion preserves YAML line boundaries", () => {
-  it.each(["name: CI", "---"]) ("handles a final anchor without a newline: %s", (raw) => {
+  for (const raw of ["name: CI", "---"]) {
+  it(`handles a final anchor without a newline: ${raw}`, () => {
     const result = permissionsPatch.apply(CTX, makeAnalysis(raw));
-    expect(result.content).toBe(`${raw}\npermissions: read-all\n`);
+    assert.strictEqual(result.content, `${raw}\npermissions: read-all\n`);
   });
+  }
 });

@@ -1,0 +1,80 @@
+import type { ApplicationFunction } from "probot";
+import { run } from "../agent/index.js";
+import type { RunContext } from "../shared/types.js";
+
+/**
+ * app/server.ts — Probot webhook server
+ *
+ * Handles three GitHub webhook events:
+ *   - `push`              — run on every push to the default branch
+ *   - `pull_request`      — run when a PR is opened or synchronised
+ *   - `workflow_run`      — run after a workflow completes (catch failures fast)
+ *
+ * Deploy on Railway or Vercel (see railway.toml / vercel.json at repo root).
+ *
+ * Required environment variables:
+ *   APP_ID                GitHub App ID
+ *   PRIVATE_KEY           GitHub App private key (PEM, \n-escaped)
+ *   WEBHOOK_SECRET        GitHub App webhook secret
+ *   COMMIT_FIXES          "true" | "false"  (default: "false")
+ */
+
+export const threshApp: ApplicationFunction = (robot) => {
+  robot.on("push", async (context) => {
+    const { owner, repo } = context.repo();
+    const ref = context.payload.ref.replace(/^refs\/heads\//, "");
+    const defaultBranch = context.payload.repository.default_branch;
+
+    // Only heal the default branch on push.
+    if (ref !== defaultBranch) return;
+
+    const ctx: RunContext = {
+      token: await context.octokit.auth({ type: "installation" }).then(
+        (auth) => (auth as { token: string }).token
+      ),
+      commitFixes: process.env.COMMIT_FIXES === "true",
+    };
+
+    await run({ ctx, owner, repo, ref });
+  });
+
+  robot.on(
+    ["pull_request.opened", "pull_request.synchronize"],
+    async (context) => {
+      const { owner, repo } = context.repo();
+      // Fork branch names must never be resolved against the base repository.
+      const head = context.payload.pull_request.head;
+      if (!head.repo || head.repo.full_name !== context.payload.repository.full_name) {
+        robot.log.info("Skipping fork pull request; no base-repository branch writes permitted.");
+        return;
+      }
+      const ref = head.ref;
+      const prNumber = context.payload.pull_request.number;
+
+      const ctx: RunContext = {
+        token: await context.octokit.auth({ type: "installation" }).then(
+          (auth) => (auth as { token: string }).token
+        ),
+        commitFixes: process.env.COMMIT_FIXES === "true",
+        prNumber,
+      };
+
+      await run({ ctx, owner, repo, ref });
+    }
+  );
+
+  robot.on("workflow_run.completed", async (context) => {
+    const { owner, repo } = context.repo();
+    const ref = context.payload.workflow_run.head_branch ?? undefined;
+
+    const ctx: RunContext = {
+      token: await context.octokit.auth({ type: "installation" }).then(
+        (auth) => (auth as { token: string }).token
+      ),
+      commitFixes: process.env.COMMIT_FIXES === "true",
+    };
+
+    await run({ ctx, owner, repo, ref });
+  });
+};
+
