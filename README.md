@@ -1,5 +1,7 @@
 # Thresh — Self-Healing Pipelines
 
+Credited by Sophia Cole (@QueenFi703). © 2026 Sophia Cole.
+
 > **Detect and auto-fix common GitHub Actions issues via a composable patch registry.**  
 > Ships as a composite GitHub Action publishable to the Marketplace.
 
@@ -239,7 +241,7 @@ railway up
 ```
 
 The `thresh/railway.toml` is pre-configured with health-check path
-`/api/github/webhooks` and restart policy.
+`/healthz` and restart policy.
 
 ### Vercel
 
@@ -299,3 +301,16 @@ vercel deploy
 Executable remote patches are disabled, even when `PATCH_REGISTRY_URL` is set.
 Registry-supplied trust labels do not establish code authenticity. Review new
 patches locally, add them to the built-in registry, and test them before use.
+
+## Supported runtime and dependency maintenance
+
+Use Node.js 20.18.1+, 22.x, or 24+. CI runs on Node 22. Build with
+`npm ci && npm run build`, then start with `npm start`. The development command
+remains `npm run dev`. Probot 14 middleware is awaited before listening;
+`GET /healthz` reports server readiness without contacting GitHub.
+
+The test suite uses Node’s built-in test runner, strict assertions, and tsx.
+Jest and ts-jest were removed because their coverage dependencies still pulled
+in an affected package with no patched release. All existing tests remain,
+with additional local HTTP integration tests for Probot 14. Probot 14 replaces
+the affected legacy telemetry dependencies.

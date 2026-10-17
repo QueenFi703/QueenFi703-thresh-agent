@@ -1,4 +1,5 @@
-import { it, expect, afterEach } from "@jest/globals";
+import { describe, it, afterEach, before as beforeAll, after as afterAll, mock } from "node:test";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -24,34 +25,34 @@ function fixture() {
 it("pushes only the intended workflow without interpreting shell syntax", () => {
   const { work, origin, file, result, git } = fixture();
   persistLocal(work, [result], "main");
-  expect(git("--git-dir", origin, "show", `main:${file}`)).toBe("name: repaired");
-  expect(git("-C", work, "status", "--porcelain")).toBe("");
-  expect(fs.existsSync(path.join(work, "INJECTED"))).toBe(false);
+  assert.strictEqual(git("--git-dir", origin, "show", `main:${file}`), "name: repaired");
+  assert.strictEqual(git("-C", work, "status", "--porcelain"), "");
+  assert.strictEqual(fs.existsSync(path.join(work, "INJECTED")), false);
 });
 it("rejects dirty workspaces before writing", () => {
   const { work, result, file } = fixture();
   fs.writeFileSync(path.join(work, "user-work.txt"), "keep");
-  expect(() => persistLocal(work, [result], "main")).toThrow("dirty workspace");
-  expect(fs.readFileSync(path.join(work, file), "utf8")).toBe("name: original\n");
+  assert.throws(() => persistLocal(work, [result], "main"), (error: unknown) => error instanceof Error && error.message.includes("dirty workspace"));
+  assert.strictEqual(fs.readFileSync(path.join(work, file), "utf8"), "name: original\n");
 });
 it("rejects a mismatched target branch", () => {
   const { work, result } = fixture();
-  expect(() => persistLocal(work, [result], "other")).toThrow("match the checkout");
+  assert.throws(() => persistLocal(work, [result], "other"), (error: unknown) => error instanceof Error && error.message.includes("match the checkout"));
 });
 it("rejects paths outside workflows", () => {
   const { work, result } = fixture();
-  expect(() => persistLocal(work, [{ ...result, path: "../outside" }], "main")).toThrow("workflow file");
+  assert.throws(() => persistLocal(work, [{ ...result, path: "../outside" }], "main"), (error: unknown) => error instanceof Error && error.message.includes("workflow file"));
 });
 it("does not push pre-existing unpushed commits", () => {
   const { work, result, git } = fixture();
   fs.writeFileSync(path.join(work, "user-work.txt"), "keep");
   git("-C", work, "add", "user-work.txt");
   git("-C", work, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-m", "private work");
-  expect(() => persistLocal(work, [result], "main")).toThrow("match origin");
+  assert.throws(() => persistLocal(work, [result], "main"), (error: unknown) => error instanceof Error && error.message.includes("match origin"));
 });
 it("does not claim success when pushing fails", () => {
   const { work, origin, result } = fixture();
   const hook = path.join(origin, "hooks/pre-receive");
   fs.writeFileSync(hook, "#!/bin/sh\nexit 1\n", { mode: 0o755 });
-  expect(() => persistLocal(work, [result], "main")).toThrow();
+  assert.throws(() => persistLocal(work, [result], "main"));
 });
